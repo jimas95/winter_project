@@ -1,13 +1,14 @@
 #include "ros/ros.h"
 #include "commander/commandSRV.h"
 #include <iostream>
-// #include "geometry_msgs/Pose.h"
-// #include "geometry_msgs/Point.h"
-// #include "geometry_msgs/Quaternion.h"
 #include <move_base_msgs/MoveBaseAction.h>
 #include <actionlib_msgs/GoalID.h>
 #include <actionlib/client/simple_action_client.h>
 #include <array>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/transform_listener.h>
+#include <geometry_msgs/TransformStamped.h>
 
 typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
 
@@ -85,6 +86,14 @@ bool get_command(commander::commandSRV::Request  &req,
     return true;
 }
 
+// convert yaw to Quaternion
+geometry_msgs::Quaternion get_quad(TargetLocation target){
+    tf2::Quaternion q;
+    q.setRPY(0, 0, target.orientation);
+    geometry_msgs::Quaternion quad_msg;
+    quad_msg = tf2::toMsg(q);
+    return quad_msg;
+}
 
 // set goal position for robot, 
 // Input target --> goal to go
@@ -105,8 +114,10 @@ void set_goal(TargetLocation target){
     goal.target_pose.header.frame_id = "map"; // these need to change
     goal.target_pose.header.stamp = ros::Time::now();
 
-    goal.target_pose.pose.position.x = 1.0;
-    goal.target_pose.pose.orientation.w = 1.0;
+    goal.target_pose.pose.position.x = target.x;
+    goal.target_pose.pose.position.y = target.y;
+    goal.target_pose.pose.position.z = 0.0;
+    goal.target_pose.pose.orientation = get_quad(target);
 
     ROS_INFO("Sending goal");
     ac.sendGoal(goal);
@@ -117,18 +128,24 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "Commander");
     ros::NodeHandle n;
     
+    // Services 
     ros::ServiceServer service = n.advertiseService("commander", get_command);
     ros::Publisher cancel_pub = n.advertise<actionlib_msgs::GoalID>("/move_base/cancel", 100);
 
-
-    ROS_INFO("Ready to Recieve Commands!");
+    // tf for position 
+    tf2_ros::Buffer tfBuffer;
+    tf2_ros::TransformListener tfListener(tfBuffer);
 
 
     // ros::spin();
     auto frequency = 5;
     ros::Rate loop_rate(frequency);
-    TargetLocation kitchen{0,0,0};
-    TargetLocation home{0,0,0};
+    TargetLocation kitchen_loc{0,0,0};
+    TargetLocation shelfs_loc{1,0,0};
+    TargetLocation home_loc{1,1,0};
+    TargetLocation drawers_loc{2,2,0};
+
+    ROS_INFO("Ready to Recieve Commands!");
 
     while(ros::ok()){
         ROS_INFO_STREAM("Status --> " << getEnumName(map_position));
@@ -146,18 +163,35 @@ int main(int argc, char **argv)
                     
                     break;
                 case Position::kitchen:
+                    set_goal(kitchen_loc);
                     break;
                 case Position::shelfs:
+                    set_goal(shelfs_loc);
                     break;
                 case Position::home:
-                    set_goal(home);
+                    set_goal(home_loc);
                     break;
                 case Position::drawers:
+                    set_goal(drawers_loc);
                     break;
                 default : 
                     ROS_ERROR("Unknow rec_command");
             }   
             rec_command = false;
+        }
+
+
+        geometry_msgs::TransformStamped transformStamped;
+        try{
+        transformStamped = tfBuffer.lookupTransform("map", "base_footprint",ros::Time(0));
+        ROS_INFO_STREAM("robot x --> " << transformStamped.transform.translation.x);
+        ROS_INFO_STREAM("robot y --> " << transformStamped.transform.translation.y);
+
+        }
+        catch (tf2::TransformException &ex) {
+        ROS_WARN("%s",ex.what());
+        ros::Duration(1.0).sleep();
+        continue;
         }
 
         loop_rate.sleep();
