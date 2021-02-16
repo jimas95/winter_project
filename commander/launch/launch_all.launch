@@ -1,0 +1,10 @@
+
+
+<!-- launch the 4 launchers 
+roslaunch nuridgeback_robot base.launch	 (at ridgeback)
+roslaunch nuridgeback_robot laser_slam.launch	(at ridgeback)
+roslaunch nuridgeback_robot visualization.launch viz_nav:=true (at laptop)	
+roslaunch nuridgeback_robot navigation.launch	(at laptop)
+run commander
+remap set position
+create my configuration for rviz  -->
