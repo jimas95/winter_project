@@ -101,8 +101,9 @@ void set_goal(TargetLocation target){
     
 
     //tell the action client that we want to spin a thread by default
-    MoveBaseClient ac("move_base", true);
-
+    MoveBaseClient ac("/ridgeback/move_base", true);
+    
+// rsync -av src/ administrator@192.168.131.1:/home/administrator/jimas_ws/src
 
     // //wait for the action server to come up
     while(!ac.waitForServer(ros::Duration(5.0))){
@@ -111,16 +112,18 @@ void set_goal(TargetLocation target){
     move_base_msgs::MoveBaseGoal goal;
 
     //we'll send a goal to the robot to move 1 meter forward
-    goal.target_pose.header.frame_id = "map"; // these need to change
+    // goal.target_pose.header.frame_id = "map"; // these need to change
+    goal.target_pose.header.frame_id = "base_link"; // these need to change
     goal.target_pose.header.stamp = ros::Time::now();
 
-    goal.target_pose.pose.position.x = target.x;
+    // goal.target_pose.pose.position.x = target.x;
+    goal.target_pose.pose.position.x = 0.5;
     goal.target_pose.pose.position.y = target.y;
     goal.target_pose.pose.position.z = 0.0;
     goal.target_pose.pose.orientation = get_quad(target);
 
     ROS_INFO("Sending goal");
-    ac.sendGoal(goal);
+    ac.sendGoal(goal); 
 }
 
 int main(int argc, char **argv)
@@ -130,7 +133,7 @@ int main(int argc, char **argv)
     
     // Services 
     ros::ServiceServer service = n.advertiseService("commander", get_command);
-    ros::Publisher cancel_pub = n.advertise<actionlib_msgs::GoalID>("/move_base/cancel", 100);
+    ros::Publisher cancel_pub = n.advertise<actionlib_msgs::GoalID>("/ridgeback/move_base/cancel", 100);
 
     // tf for position 
     tf2_ros::Buffer tfBuffer;
@@ -183,7 +186,7 @@ int main(int argc, char **argv)
 
         geometry_msgs::TransformStamped transformStamped;
         try{
-        transformStamped = tfBuffer.lookupTransform("map", "base_footprint",ros::Time(0));
+        transformStamped = tfBuffer.lookupTransform("map", "base_link",ros::Time(0));
         ROS_INFO_STREAM("robot x --> " << transformStamped.transform.translation.x);
         ROS_INFO_STREAM("robot y --> " << transformStamped.transform.translation.y);
 
