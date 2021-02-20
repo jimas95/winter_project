@@ -13,7 +13,12 @@
 typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
 
 
+//why not stop ?
+// no move_base action ? 
+// installation folders
 
+// copy files to ridgeback
+// rsync -av src/ administrator@192.168.131.1:/home/administrator/jimas_ws/src
 
 enum Position {abandon, kitchen, shelfs, home, drawers };
 Position map_position = home;
@@ -100,10 +105,8 @@ geometry_msgs::Quaternion get_quad(TargetLocation target){
 void set_goal(TargetLocation target){
     
 
-    //tell the action client that we want to spin a thread by default
-    MoveBaseClient ac("/ridgeback/move_base", true);
     
-// rsync -av src/ administrator@192.168.131.1:/home/administrator/jimas_ws/src
+    static MoveBaseClient ac("move_base", true);
 
     // //wait for the action server to come up
     while(!ac.waitForServer(ros::Duration(5.0))){
