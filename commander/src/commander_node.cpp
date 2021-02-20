@@ -13,7 +13,9 @@
 typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
 
 
-
+//why not stop ?
+//no move_base action ? 
+// installation folders
 
 enum Position {abandon, kitchen, shelfs, home, drawers };
 Position map_position = home;
@@ -101,8 +103,9 @@ void set_goal(TargetLocation target){
     
 
     //tell the action client that we want to spin a thread by default
-    MoveBaseClient ac("move_base", true);
-
+    // MoveBaseClient ac("move_base", true);
+    static MoveBaseClient ac("move_base", true);
+    // MoveBaseClient ac("move_base_simple", true);
 
     // //wait for the action server to come up
     while(!ac.waitForServer(ros::Duration(5.0))){
