@@ -8,3 +8,15 @@ roslaunch nuridgeback_robot navigation.launch	(at laptop)
 run commander
 remap set position
 create my configuration for rviz  -->
+
+<launch>
+  <arg name="robot" default="1" doc="sets machine address (if 1 then runs on ridgeback)"/>
+
+  <include file="$(find nuridgeback_robot)/launch/basic_remote.launch">
+    <arg name="robot" value="$(arg robot)"/>
+  </include>
+
+  <!-- <include file="$(find nuridgeback_robot)/launch/base.launch"/> -->
+  <!-- <include file="$(find nuridgeback_robot)/launch/laser_slam.launch"/> -->
+  <include file="$(find nuridgeback_robot)/launch/navigation.launch"/>
+</launch>
