@@ -12,8 +12,6 @@ create my configuration for rviz  -->
 <launch>
   <arg name="robot" default="0" doc="sets machine address (if 1 then runs on ridgeback)"/>
 
-
-
   <include file="$(find nuridgeback_robot)/launch/basic_remote.launch">
     <arg name="robot" value="$(arg robot)"/>
   </include>
@@ -30,5 +28,11 @@ create my configuration for rviz  -->
   <include file="$(find nuridgeback_robot)/launch/navigation.launch">
       <arg name="robot" value="$(arg robot)"/>
   </include>
+
+  <include file="$(find sawback_manipulation)/launch/sawback_start.launch"/>
+  
+
+  <include file="$(find commander)/launch/aprilTag_ridgeback.launch"/>
+  
 
 </launch>

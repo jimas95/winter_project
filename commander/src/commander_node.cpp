@@ -142,11 +142,20 @@ class ROBOT_STATE
         
     Position target=Position::home;
     State state=State::idle; 
-    TargetLocation kitchen_goal{-0.5,2.7,0};
-    TargetLocation shelfs_goal{1.5,0,0};
-    TargetLocation home_goal{1.8,2.7,0};
+    // TargetLocation kitchen_goal{-0.5,2.7,0};
+    // TargetLocation shelfs_goal{1.5,0,0};
+    // TargetLocation home_goal{1.8,2.7,0};
+    // TargetLocation drawers_goal{-0.5,0,0};
+    // TargetLocation charging_goal{0,0,0};
+    // TargetLocation forward_goal{2,0,0};
+    // TargetLocation rotate_goal{0,0,PI};
+
+
+    TargetLocation kitchen_goal{-0.631584, 8.38614,  153.0};
+    TargetLocation shelfs_goal{1.77024,   -0.488194, 50.0};
+    TargetLocation home_goal{  0.0346761, -2.49927,  50.0};
     TargetLocation drawers_goal{-0.5,0,0};
-    TargetLocation charging_goal{0,0,0};
+    TargetLocation charging_goal{-1.98458, -0.755201, -38.6043};
     TargetLocation forward_goal{2,0,0};
     TargetLocation rotate_goal{0,0,PI};
 };
@@ -160,7 +169,7 @@ class MyNode
         MyNode():
             nh{},
             serviceCommader(nh.advertiseService("commander", &MyNode::command_callback,this)),
-            actionClient("move_base", true),
+            actionClient("ridgeback/move_base/", true),
             timer(nh.createTimer(ros::Duration(1), &MyNode::main_loop, this))
          {
             
@@ -198,7 +207,7 @@ class MyNode
                         break;
                     default : 
                         ROS_ERROR("service command --> Unknow Command");
-                        res.result = "Unknow Command";
+                        res.result = "Unknow Command \n set 0 for abandon\n set 1 for goTO\n set 2 for idle\n set 3 for patrol\n";
                         command_recieved = false;
                         return false;
 
@@ -262,7 +271,9 @@ class MyNode
         // return true if the goal is reached
         bool get_Action_state(){
             auto status = actionClient.getState();
-            if (status == actionlib::SimpleClientGoalState::SUCCEEDED || status == actionlib::SimpleClientGoalState::LOST ){
+            if (status == actionlib::SimpleClientGoalState::SUCCEEDED ||
+                status == actionlib::SimpleClientGoalState::LOST || 
+                status == actionlib::SimpleClientGoalState::ABORTED ){
                 ROS_INFO_STREAM("Goal SUCCEEDED");
                 return true;
             }
@@ -331,7 +342,7 @@ class MyNode
             //print current state
             ROS_INFO_STREAM("Current state --> " << robot_state.get_state_name());
             ROS_INFO_STREAM("Robot position --> " << robot_pos.x << " " << robot_pos.y << " " << rad2Degree(robot_pos.orientation));
-            get_Action_state();
+            // get_Action_state();
             update_robot_position();
 
             switch(robot_state.get_state()){
