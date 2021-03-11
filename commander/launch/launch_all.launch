@@ -10,10 +10,8 @@ remap set position
 create my configuration for rviz  -->
 
 <launch>
-  <arg name="robot" default="1" doc="sets machine address (if 1 then runs on ridgeback)"/>
+  <arg name="robot" default="0" doc="sets machine address (if 1 then runs on ridgeback)"/>
 
-
-  <include file="$(find nuridgeback_robot)/launch/visualization.launch"/>
 
 
   <include file="$(find nuridgeback_robot)/launch/basic_remote.launch">
@@ -21,8 +19,16 @@ create my configuration for rviz  -->
   </include>
 
 
-  <!-- <include file="$(find nuridgeback_robot)/launch/base.launch"/> -->
-  <include file="$(find nuridgeback_robot)/launch/laser_slam.launch"/>
-  <include file="$(find nuridgeback_robot)/launch/move_base.launch"/>
+  <include file="$(find nuridgeback_robot)/launch/base.launch">
+      <arg name="robot" value="$(arg robot)"/>
+  </include>
+
+  <include file="$(find nuridgeback_robot)/launch/laser_slam.launch">
+      <arg name="robot" value="$(arg robot)"/>
+  </include>
+
+  <include file="$(find nuridgeback_robot)/launch/navigation.launch">
+      <arg name="robot" value="$(arg robot)"/>
+  </include>
 
 </launch>
