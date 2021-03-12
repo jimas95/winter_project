@@ -183,8 +183,8 @@ def main():
     # print (handler.group.get_current_joint_values())
     # exit()
 
-
-
+    pick_and_place = True
+    handler.hunter_tag = "/tag_0"
     handler.go_to_state(snake)
     while(not rospy.is_shutdown()):
         
@@ -193,11 +193,15 @@ def main():
         handler.go_forward()
         
         if(is_tf):
-            print("Pick item")
-            handler.pick()
-            handler.rotate_180()
-            handler.hunter_tag = "/tag_1"
-            exit()
+            if(pick_and_place):
+                print("Pick item")
+                handler.pick()
+                # handler.rotate_180()
+                handler.hunter_tag = "/tag_1"
+                pick_and_place = False
+            else:
+                handler.place_table()
+                exit()
 
         rospy.sleep(0.05)        
 
