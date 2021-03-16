@@ -49,7 +49,7 @@ class Manipulator:
         #tf listener
         self.listener = tf.TransformListener()
 
-    def get_yaw(self,quad):
+    def get_yaw(self,q_rot):
         quaternion = (q_rot[0],q_rot[1],q_rot[2],q_rot[3])
         euler = tf.transformations.euler_from_quaternion(quaternion)
         roll = euler[0]
@@ -57,16 +57,42 @@ class Manipulator:
         yaw = euler[2]
         return yaw
 
-    def rotate_180(self):
+    def normalize_angle(self,rad):
+        norm_angle = math.fmod(rad,2*math.pi)
+        if(norm_angle>math.pi):
+            norm_angle = norm_angle - 2*math.pi
+        if(norm_angle<-math.pi):
+            norm_angle = norm_angle + 2*math.pi
+        
+        return norm_angle
+
+
+    def rotate_90(self):
 
         # get orientation
-        (trans,rot) = self.listener.lookupTransform('/map', '/base_link', rospy.Time(0))
-        yaw = self.get_yaw(rot)
-        print(yaw)
+
+
+        # now = rospy.Time.now()
+        # listener.waitForTransform(self.robot_link, target_link, now, rospy.Duration(4.0))
+        # (trans,rot) = listener.lookupTransform(self.robot_link, target_link, now)
 
         # rotatete until you turn 180 degrees
         # done
+        (trans,rot) = self.listener.lookupTransform('/map', '/base_link', rospy.Time(0))
+        yaw_old = self.get_yaw(rot)
+        while(True):
+            (trans,rot) = self.listener.lookupTransform('/map', '/base_link', rospy.Time(0))
+            yaw = self.get_yaw(rot)
+            self.rotate()
+            rospy.sleep(0.05) 
+            norma = self.normalize_angle(yaw-yaw_old)
+            print(norma*180/3.14)
 
+            if(norma>math.pi/2.0):
+                print("ti fasi ?")
+                break
+
+        
     def rotate_180_v0(self):
        
         (trans,rot) = self.listener.lookupTransform('/map', '/base_link', rospy.Time(0))
@@ -206,6 +232,23 @@ class Manipulator:
         forward_msg.linear.x = 0.1
         self.forward.publish(forward_msg)
 
+    def rotate(self):
+        forward_msg = Twist()
+        forward_msg.angular.z = 0.1
+        forward_msg.linear.x = 0
+        self.forward.publish(forward_msg)
+
+
+    def patrol(self):
+        self.go_forward()
+        self.hunter_tag = "/tag_1"
+        is_tf_1 = self.check_tf()
+        self.hunter_tag = "/tag_2"
+        is_tf_2 = self.check_tf()
+        if(is_tf_1 or is_tf_2):
+            self.rotate_90()
+            self.rotate_90()
+
 def main():
     """ The main() function. """
     rospy.loginfo(sys.argv)
@@ -222,23 +265,25 @@ def main():
     
 
     while(not rospy.is_shutdown()):
-        # handler.rotate_180()
-        is_tf = handler.check_tf()
-        print(is_tf)
-        handler.go_forward()
+        handler.patrol()
+    
+        # is_tf = handler.check_tf()
+        # print(is_tf)
+        # handler.go_forward()
         
-        if(is_tf):
-            if(pick_and_place):
-                print("Pick item")
-                handler.pick()
-                handler.place_shelf()
-                exit()
-                # handler.rotate_180()
-                handler.hunter_tag = "/tag_1"
-                pick_and_place = False
-            else:
-                handler.place_table()
-                exit()
+        # if(is_tf):
+        #     handler.rotate_90()
+            # if(pick_and_place):
+            #     print("Pick item")
+            #     handler.pick()
+            #     handler.place_shelf()
+            #     exit()
+            #     # handler.rotate_180()
+            #     handler.hunter_tag = "/tag_1"
+            #     pick_and_place = False
+            # else:
+            #     handler.place_table()
+            #     exit()
 
         rospy.sleep(0.05)        
 
