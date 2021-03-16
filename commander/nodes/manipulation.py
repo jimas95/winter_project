@@ -298,7 +298,7 @@ class Manipulator:
 
         # go backwards ? 
         callback_time = rospy.get_time()  
-        while(rospy.get_time()-callback_time<7.5):
+        while(rospy.get_time()-callback_time<8.0):
             self.go_backward()
             rospy.sleep(0.05)
 
