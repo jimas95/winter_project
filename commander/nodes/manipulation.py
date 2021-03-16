@@ -209,8 +209,8 @@ class Manipulator:
         if(is_tf):
             self.open_gripper()
             self.go_to_state(snake)
-            self.grab_object([0.1,0.0,0.1])
-            self.grab_object([0.1,0.0,-0.02])
+            self.grab_object([0.065,0.0,0.1])
+            self.grab_object([0.065,0.0,-0.02])
             self.close_gripper()
             self.go_to_state(snake)
 
@@ -256,29 +256,73 @@ class Manipulator:
             self.rotate_90()
 
     def open_drawer(self):
+        # fixed positions
         pos_1 = [-0.739419921875, -0.3339248046875, -1.070546875, 1.0957734375, 0.5891904296875, 0.7857470703125, -0.782533203125]
         pos_2 = [-0.8913779296875, -0.2892041015625, -1.0784599609375, 1.092732421875, 1.0032705078125, 1.188814453125, -1.64507421875]
         pos_3 = [-0.9185966796875, -0.1623369140625, -1.0957216796875, 1.089267578125, 1.1438447265625, 1.169357421875, -1.64507421875]
+
+
+
+
+        # go inside handle
         self.go_to_state(pos_1)
         self.go_to_state(pos_2)
         self.go_to_state(pos_3)
+        # move forward ( open drawer)
         callback_time = rospy.get_time()  
         while(rospy.get_time()-callback_time<5):
             self.go_forward()
             rospy.sleep(0.05)
+        # GET OUT OF HANDLE
         self.go_to_state(pos_2)
         self.go_to_state(pos_1)
         self.go_to_state(snake)
-
+        # GO BACKWARDS
         callback_time = rospy.get_time()  
         while(rospy.get_time()-callback_time<10):
             self.go_backward()
             rospy.sleep(0.05)
 
-    def place_on_top(self):
+
+    def close_drawer(self):
+        pos = [-1.083392578125, -0.4717900390625, 0.0676396484375, 0.6632451171875, -0.13228515625, 1.4128447265625, -2.3802236328125]
+
+        # go forward
+        callback_time = rospy.get_time()  
+        while(rospy.get_time()-callback_time<6):
+            self.go_forward()
+            rospy.sleep(0.05)
+
+        # set clossing position to arm 
+        self.go_to_state(pos)
+
+        # go backwards ? 
+        callback_time = rospy.get_time()  
+        while(rospy.get_time()-callback_time<7.5):
+            self.go_backward()
+            rospy.sleep(0.05)
+
+        # go to snake position
+        self.go_to_state(snake)
+
+    def place_on_drawer(self,gripper):
         print("Place object on top of self")
-        self.go_to_state(place_table_pos)
-        self.open_gripper()
+        pos_1 = [-1.594564453125, -0.9879912109375, -0.164595703125, 1.0732421875, 0.055142578125, 1.5815517578125, -1.523052734375]
+        pos_2 = [-1.597767578125, -0.7991220703125, -0.1661748046875, 1.0099609375, 0.0536962890625, 1.474869140625, -1.523052734375]
+        pos_3 = [-1.1120654296875, -0.5120849609375, -0.07609375, 0.2645986328125, 0.0099287109375, 1.9019892578125, -0.9143671875]
+
+        self.go_to_state(pos_1)        #leave object on top of drawer
+        self.go_to_state(pos_2)        #leave object on top of drawer
+        if(gripper):
+            self.open_gripper()
+        else:
+            self.close_gripper()
+        self.go_to_state(pos_1)        #leave object on top of drawer
+
+        if(not gripper):
+            self.go_to_state(pos_3)        #leave object on inside of drawer
+            self.open_gripper()
+
         self.go_to_state(snake)
 
 def main():
@@ -291,7 +335,9 @@ def main():
     # exit()
 
     pick_and_place = True
+    second_round = True
     handler.hunter_tag = "/tag_0"
+    # handler.hunter_tag = "/tag_3"
     handler.go_to_state(snake)
 
     while(not rospy.is_shutdown()):
@@ -303,16 +349,30 @@ def main():
         handler.go_forward()
         
         if(is_tf):
+           
             if(pick_and_place):
-                print("Pick item")
-                handler.pick()                
-                handler.hunter_tag = "/tag_3"
-                pick_and_place = False
+                if(second_round):
+                    print("Pick item")
+                    handler.pick()                
+                    handler.hunter_tag = "/tag_3"
+                    pick_and_place = False
+                else:
+                    # grab object again and leave it inside the drawer
+                    handler.place_on_drawer(False)
+                    # close drawer
+                    handler.close_drawer()
+                    exit()
+
             else:
-                # handler.open_drawer()
+                #leave object on top of drawer
+                handler.place_on_drawer(True)
+                handler.open_drawer()
                 # handler.place_shelf()
                 # handler.place_table()
-                exit()
+                # exit()
+                pick_and_place = True
+                second_round = False
+
 
         rospy.sleep(0.05)        
 
