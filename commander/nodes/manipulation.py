@@ -18,6 +18,11 @@ snake  = [-0.0579208984375, -1.9296689453125, 0.0431044921875, 1.2144580078125, 
 #snake = [-1.5797138671875, -1.63575, -1.6687451171875, -0.175255859375, -0.635630859375, -1.8552236328125, -4.6607734375]
 snake2 = [0.1599619140625, -0.698787109375, -0.2838037109375, 0.994494140625, 0.2812392578125, 0.87126953125, -1.6042626953125]
 place_table_pos = [-1.4636396484375, -0.928876953125, -0.3344345703125, 0.3650927734375, 0.142884765625, 1.805130859375, -1.394240234375]
+place_shelf_pos = [-0.25307421875, -0.705984375, -0.9269208984375, 1.7825185546875, 0.7881611328125, -0.5857294921875, -1.2399931640625]
+place_shelf_off = [-0.098267578125, -1.512220703125, -0.015564453125, 2.022685546875, -0.1308388671875, -0.556537109375, -1.24040625]
+
+
+
 
 from control_msgs.msg import GripperCommandAction, GripperCommandGoal
 
@@ -44,7 +49,26 @@ class Manipulator:
         #tf listener
         self.listener = tf.TransformListener()
 
+    def get_yaw(self,quad):
+        quaternion = (q_rot[0],q_rot[1],q_rot[2],q_rot[3])
+        euler = tf.transformations.euler_from_quaternion(quaternion)
+        roll = euler[0]
+        pitch = euler[1]
+        yaw = euler[2]
+        return yaw
+
     def rotate_180(self):
+
+        # get orientation
+        (trans,rot) = self.listener.lookupTransform('/map', '/base_link', rospy.Time(0))
+        yaw = self.get_yaw(rot)
+        print(yaw)
+
+        # rotatete until you turn 180 degrees
+        # done
+
+    def rotate_180_v0(self):
+       
         (trans,rot) = self.listener.lookupTransform('/map', '/base_link', rospy.Time(0))
 
         q_rot = quaternion_from_euler(0, 0,math.pi)
@@ -169,6 +193,13 @@ class Manipulator:
         self.open_gripper()
         self.go_to_state(snake)
 
+    def place_shelf(self):
+        print("Place object Table")
+        self.go_to_state(place_shelf_off)
+        self.go_to_state(place_shelf_pos)
+        self.open_gripper()
+        self.go_to_state(place_shelf_off)
+        self.go_to_state(snake)   
 
     def go_forward(self):
         forward_msg = Twist()
@@ -180,14 +211,18 @@ def main():
     rospy.loginfo(sys.argv)
     rospy.init_node('arm',log_level=rospy.DEBUG)
     handler = Manipulator()
+    
     # print (handler.group.get_current_joint_values())
     # exit()
 
     pick_and_place = True
     handler.hunter_tag = "/tag_0"
     handler.go_to_state(snake)
+    
+    
+
     while(not rospy.is_shutdown()):
-        
+        # handler.rotate_180()
         is_tf = handler.check_tf()
         print(is_tf)
         handler.go_forward()
@@ -196,6 +231,8 @@ def main():
             if(pick_and_place):
                 print("Pick item")
                 handler.pick()
+                handler.place_shelf()
+                exit()
                 # handler.rotate_180()
                 handler.hunter_tag = "/tag_1"
                 pick_and_place = False
