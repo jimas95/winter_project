@@ -185,7 +185,8 @@ class Manipulator:
             dist = self.get_dist(trans)
             print("Found tag!")
             print(dist)
-            if(dist<1.0):
+            # if(dist<1.0):
+            if(dist<0.75):
                 return True
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             return False
@@ -232,6 +233,11 @@ class Manipulator:
         forward_msg.linear.x = 0.1
         self.forward.publish(forward_msg)
 
+    def go_backward(self):
+        forward_msg = Twist()
+        forward_msg.linear.x = -0.1
+        self.forward.publish(forward_msg)
+
     def rotate(self):
         forward_msg = Twist()
         forward_msg.angular.z = 0.1
@@ -249,41 +255,64 @@ class Manipulator:
             self.rotate_90()
             self.rotate_90()
 
+    def open_drawer(self):
+        pos_1 = [-0.739419921875, -0.3339248046875, -1.070546875, 1.0957734375, 0.5891904296875, 0.7857470703125, -0.782533203125]
+        pos_2 = [-0.8913779296875, -0.2892041015625, -1.0784599609375, 1.092732421875, 1.0032705078125, 1.188814453125, -1.64507421875]
+        pos_3 = [-0.9185966796875, -0.1623369140625, -1.0957216796875, 1.089267578125, 1.1438447265625, 1.169357421875, -1.64507421875]
+        self.go_to_state(pos_1)
+        self.go_to_state(pos_2)
+        self.go_to_state(pos_3)
+        callback_time = rospy.get_time()  
+        while(rospy.get_time()-callback_time<5):
+            self.go_forward()
+            rospy.sleep(0.05)
+        self.go_to_state(pos_2)
+        self.go_to_state(pos_1)
+        self.go_to_state(snake)
+
+        callback_time = rospy.get_time()  
+        while(rospy.get_time()-callback_time<10):
+            self.go_backward()
+            rospy.sleep(0.05)
+
+    def place_on_top(self):
+        print("Place object on top of self")
+        self.go_to_state(place_table_pos)
+        self.open_gripper()
+        self.go_to_state(snake)
+
 def main():
     """ The main() function. """
     rospy.loginfo(sys.argv)
     rospy.init_node('arm',log_level=rospy.DEBUG)
     handler = Manipulator()
-    
+    # rospy.sleep(1) 
     # print (handler.group.get_current_joint_values())
     # exit()
 
     pick_and_place = True
     handler.hunter_tag = "/tag_0"
     handler.go_to_state(snake)
-    
-    
 
     while(not rospy.is_shutdown()):
-        handler.patrol()
-    
-        # is_tf = handler.check_tf()
-        # print(is_tf)
-        # handler.go_forward()
+        # handler.patrol()
+          
         
-        # if(is_tf):
-        #     handler.rotate_90()
-            # if(pick_and_place):
-            #     print("Pick item")
-            #     handler.pick()
-            #     handler.place_shelf()
-            #     exit()
-            #     # handler.rotate_180()
-            #     handler.hunter_tag = "/tag_1"
-            #     pick_and_place = False
-            # else:
-            #     handler.place_table()
-            #     exit()
+        is_tf = handler.check_tf()
+        print(is_tf)
+        handler.go_forward()
+        
+        if(is_tf):
+            if(pick_and_place):
+                print("Pick item")
+                handler.pick()                
+                handler.hunter_tag = "/tag_3"
+                pick_and_place = False
+            else:
+                # handler.open_drawer()
+                # handler.place_shelf()
+                # handler.place_table()
+                exit()
 
         rospy.sleep(0.05)        
 
