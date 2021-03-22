@@ -88,7 +88,7 @@ class Manipulator:
             norma = self.normalize_angle(yaw-yaw_old)
             print(norma*180/3.14)
 
-            if(norma>math.pi/2.0):
+            if(norma>(math.pi/2.0)-0.1):
                 print("ti fasi ?")
                 break
 
@@ -158,7 +158,7 @@ class Manipulator:
     def get_offset(self):
         print(self.group.get_current_pose().pose)
         try:
-            (trans,rot) = self.listener.lookupTransform('/base_link', '/tag_0', rospy.Time(0))
+            (trans,rot) = self.listener.lookupTransform('/base_link', self.hunter_tag, rospy.Time(0))
             print(trans)
             print("diff")
             pose = self.group.get_current_pose()
@@ -194,7 +194,7 @@ class Manipulator:
 
 
     def grab_object(self, off):
-        (trans,rot) = self.listener.lookupTransform('/base_link', '/tag_0', rospy.Time(0))
+        (trans,rot) = self.listener.lookupTransform('/base_link', self.hunter_tag, rospy.Time(0))
         print(trans)
         trans[0] = trans[0] + off[0]
         trans[1] = trans[1] + off[1]
@@ -209,10 +209,13 @@ class Manipulator:
         if(is_tf):
             self.open_gripper()
             self.go_to_state(snake)
+            # self.grab_object([0.1,0.0,0.1])
+            # self.grab_object([0.1,0.0,-0.02])
             self.grab_object([0.065,0.0,0.1])
             self.grab_object([0.065,0.0,-0.02])
             self.close_gripper()
             self.go_to_state(snake)
+
 
     def place_table(self):
         print("Place object Table")
@@ -230,7 +233,7 @@ class Manipulator:
 
     def go_forward(self):
         forward_msg = Twist()
-        forward_msg.linear.x = 0.1
+        forward_msg.linear.x = 0.2
         self.forward.publish(forward_msg)
 
     def go_backward(self):
@@ -247,13 +250,11 @@ class Manipulator:
 
     def patrol(self):
         self.go_forward()
-        self.hunter_tag = "/tag_1"
-        is_tf_1 = self.check_tf()
-        self.hunter_tag = "/tag_2"
-        is_tf_2 = self.check_tf()
-        if(is_tf_1 or is_tf_2):
+        if(rospy.get_time()-self.timer> 20):
             self.rotate_90()
             self.rotate_90()
+            self.timer = rospy.get_time()
+            
 
     def open_drawer(self):
         # fixed positions
@@ -330,48 +331,69 @@ def main():
     rospy.loginfo(sys.argv)
     rospy.init_node('arm',log_level=rospy.DEBUG)
     handler = Manipulator()
+    
     # rospy.sleep(1) 
     # print (handler.group.get_current_joint_values())
     # exit()
 
     pick_and_place = True
     second_round = True
-    handler.hunter_tag = "/tag_0"
-    # handler.hunter_tag = "/tag_3"
+    # handler.hunter_tag = "/tag_4"
+    handler.hunter_tag = "/tag_3"
     handler.go_to_state(snake)
+    handler.timer = rospy.get_time()
 
     while(not rospy.is_shutdown()):
-        # handler.patrol()
+        
           
         
         is_tf = handler.check_tf()
         print(is_tf)
-        handler.go_forward()
-        
-        if(is_tf):
-           
-            if(pick_and_place):
-                if(second_round):
-                    print("Pick item")
-                    handler.pick()                
-                    handler.hunter_tag = "/tag_3"
-                    pick_and_place = False
-                else:
-                    # grab object again and leave it inside the drawer
-                    handler.place_on_drawer(False)
-                    # close drawer
-                    handler.close_drawer()
-                    exit()
+        # handler.go_forward()
 
-            else:
-                #leave object on top of drawer
-                handler.place_on_drawer(True)
-                handler.open_drawer()
-                # handler.place_shelf()
-                # handler.place_table()
-                # exit()
-                pick_and_place = True
-                second_round = False
+
+        #PATROL
+        # handler.patrol()
+        if(is_tf):
+            print("Pick item")
+            handler.pick() 
+
+        #BOX
+
+        # SHELFS
+        # if(is_tf):
+        #     print("Pick item")
+        #     handler.pick()         
+        #     print("Place item") 
+        #     handler.place_shelf()      
+        #     handler.hunter_tag = "/tag_0"
+
+        
+        # DRAWERS
+        # if(is_tf):
+           
+        #     if(pick_and_place):
+        #         if(second_round):
+        #             print("Pick item")
+        #             handler.pick()                
+        #             pick_and_place = False
+        #         else:
+        #             # grab object again and leave it inside the drawer
+        #             handler.place_on_drawer(False)
+        #             # close drawer
+        #             handler.close_drawer()
+        #             exit()
+
+        #     else:
+        #         #leave object on top of drawer
+        #         # handler.place_on_drawer(True)
+        #         # handler.open_drawer()
+        #         handler.place_shelf()
+        #         # handler.place_table()
+        #         # exit()
+        #         pick_and_place = True
+        #         handler.hunter_tag = "/tag_4"
+        #         # second_round = False
 
 
         rospy.sleep(0.05)        
